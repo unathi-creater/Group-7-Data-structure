@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let gamePaused = false;
     let selectedIndex = null;
     let currentGridSize = 6;
+    let livesleft=3,
 
     // DOM elements
     const boardDiv = document.getElementById('board');
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sizeSpan = document.getElementById('gridSize');
     const msgSpan = document.getElementById('message');
     const targetSpan = document.getElementById('targetSeq');
+    const livesSpan = document.getElementById('livesLeft');
 
     // ---------- AUDIO (your custom files) ----------
     let soundStart = null;
@@ -145,19 +147,24 @@ document.addEventListener('DOMContentLoaded', function() {
         timeLeft = limit;
         timeSpan.innerText = timeLeft + 's';
         timerId = setInterval(() => {
-            if (gameRunning && !gamePaused && timeLeft > 0) {
-                timeLeft--;
-                timeSpan.innerText = timeLeft + 's';
-                if (timeLeft === 0) {
+            if (timeLeft === 0) {
+                livesLeft--;
+                livesSpan.innerText = livesLeft;
+                stopTimer();
+                pauseBgMusic();
+                playLoseSound();
+                selectedIndex = null;
+            
+                if (livesLeft <= 0) {
                     gameRunning = false;
                     gamePaused = false;
-                    stopTimer();
-                    pauseBgMusic();
-                    playLoseSound();
-                    msgSpan.innerHTML = '💀😭💔 TIME EXPIRED! 💔😭💀<br>😢😫 YOU LOST! TRY AGAIN 😫😢';
-                    selectedIndex = null;
+                    msgSpan.innerHTML = ' GAME OVER! No lives left. Press restart.';
                     renderBoard();
                     document.querySelectorAll('.tile').forEach(t => t.style.opacity = '0.5');
+                } else {
+                    msgSpan.innerHTML = `Time up! ${livesLeft} life${livesLeft === 1 ? '' : 'ves'} remaining. Starting next round...`;
+                    renderBoard();
+                    setTimeout(() => resetGame(currentGridSize, true), 2000);
                 }
             }
         }, 1000);
@@ -260,7 +267,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ---------- GAME CONTROLS ----------
-    function resetGame(size, autoStart = false) {
+    function resetGame(size, autoStart = false,resetlives=false) {
+         if (resetLives) {
+            livesLeft = 3;
+            livesSpan.innerText = livesLeft;
+        }
         stopTimer();
         pauseBgMusic();
         gameRunning = false;
@@ -370,16 +381,14 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('pauseBtn').addEventListener('click', pauseGame);
         document.getElementById('resumeBtn').addEventListener('click', resumeGame);
         document.getElementById('restartBtn').addEventListener('click', () => {
-            resetGame(currentGridSize, false);
+            resetGame(currentGridSize, false, true);
             gameRunning = false;
             gamePaused = false;
             stopTimer();
             pauseBgMusic();
             msgSpan.innerHTML = 'game reset. press START to play.';
         });
-        document.getElementById('hintBtn').addEventListener('click', giveHint);
-    }
-
+      
     // ---------- INITIALISE ----------
     function init() {
         bindEvents();
